@@ -3,7 +3,7 @@
 # Cookbook Name:: curl
 # Recipe:: default
 #
-# Copyright 2012-2014, John Dewey
+# Copyright 2014, John Dewey
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@
 # limitations under the License.
 #
 
-package 'curl' do
-  action :upgrade
+case node['platform_family']
+when 'debian'
+  default['curl']['libcurl_packages'] = %w(libcurl3 libcurl4-openssl-dev)
+when 'rhel'
+  default['curl']['libcurl_packages'] = %w(curl-devel)
 end

@@ -1,3 +1,7 @@
+[![Build Status](http://img.shields.io/travis/retr0h/cookbook-curl.svg?style=flat-square)](https://travis-ci.org/retr0h/cookbook-curl)
+[![Dependency Status](http://img.shields.io/gemnasium/retr0h/cookbook-curl.svg?style=flat-square)](https://gemnasium.com/retr0h/cookbook-curl)
+[![Chef](http://img.shields.io/cookbook/v/curl.svg?style=flat-square)](https://supermarket.getchef.com/cookbooks/curl)
+
 Description
 ============
 
@@ -6,29 +10,50 @@ Installs/Configures curl
 Requirements
 ============
 
-* Chef 0.8+
+* Chef 12
+* Ruby 2.1.0/2.2.0
 
 Attributes
 ==========
 
+* `default['curl']['libcurl_packages']` - A list of libcurl packages to install.
+
 Usage
 =====
 
-    "run_list": [
-      "recipe[curl]"
-    ]
+```json
+"run_list": [
+    "recipe[curl]"
+]
+```
 
 default
-----
+-------
 
 Installs/Configures curl
+
+libcurl
+-------
+
+```json
+"run_list": [
+    "recipe[curl::libcurl]"
+]
+```
+
+Install/Configure libcurl packages
+
+Testing
+=======
+
+    $ rake
 
 License and Author
 ==================
 
 Author:: John Dewey (<john@dewey.ws>)
 
-Copyright 2012, John Dewey
+Copyright 2012-2014, John Dewey
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

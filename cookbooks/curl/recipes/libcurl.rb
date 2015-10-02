@@ -1,9 +1,9 @@
 # encoding: UTF-8
 #
 # Cookbook Name:: curl
-# Recipe:: default
+# Recipe:: libcurl
 #
-# Copyright 2012-2014, John Dewey
+# Copyright 2014, John Dewey
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 # limitations under the License.
 #
 
-package 'curl' do
-  action :upgrade
+node['curl']['libcurl_packages'].each do |pkg|
+  package pkg do
+    action :upgrade
+  end
 end
