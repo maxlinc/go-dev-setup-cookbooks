@@ -28,10 +28,10 @@ slave_cmds = case node['java']['oracle_rpm']['type']
                %W[ControlPanel java_vm javaws jcontrol keytool orbd pack200 policytool rmid rmiregistry servertool tnameserv unpack200]
 
              else
-               Chef::Application.fatal "Unsupported oracle RPM type (#{node['java']['oracle_rpm']['type']})"
+               Chef::Application.fatal!("Unsupported oracle RPM type (#{node['java']['oracle_rpm']['type']})")
              end
 
-if platform_family?('rhel', 'fedora')
+if platform_family?('rhel', 'fedora') and node['java']['set_default']
 
   bash 'update-java-alternatives' do
     java_home = node['java']['java_home']
@@ -41,7 +41,7 @@ if platform_family?('rhel', 'fedora')
     end
 
     code <<-EOH.gsub(/^\s+/, '')
-      update-alternatives --install /usr/bin/java java #{java_location} 1061 \
+      update-alternatives --install /usr/bin/java java #{java_location} #{node['java']['alternatives_priority']} \
       #{slave_lines} && \
       update-alternatives --set java #{java_location}
     EOH
@@ -50,7 +50,11 @@ if platform_family?('rhel', 'fedora')
 
 end
 
-package node['java']['oracle_rpm']['type']  do
-  action :upgrade
-  notifies :run, 'bash[update-java-alternatives]', :immediately if platform_family?('rhel', 'fedora')
+package_name = node['java']['oracle_rpm']['package_name'] || node['java']['oracle_rpm']['type']
+package package_name  do
+  action :install
+  version node['java']['oracle_rpm']['package_version'] if node['java']['oracle_rpm']['package_version']
+  notifies :run, 'bash[update-java-alternatives]', :immediately if platform_family?('rhel', 'fedora') and node['java']['set_default']
 end
+
+include_recipe 'java::oracle_jce' if node['java']['oracle']['jce']['enabled']

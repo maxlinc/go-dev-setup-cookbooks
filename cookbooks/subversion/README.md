@@ -1,23 +1,23 @@
 subversion Cookbook
 ===================
-[![Build Status](https://secure.travis-ci.org/opscode-cookbooks/subversion.png?branch=master)](http://travis-ci.org/opscode-cookbooks/subversion)
+[![Build Status](https://travis-ci.org/chef-cookbooks/subversion.svg?branch=master)](http://travis-ci.org/chef-cookbooks/subversion)
+[![Cookbook Version](https://img.shields.io/cookbook/v/subversion.svg)](https://supermarket.chef.io/cookbooks/subversion)
 
 Installs subversion for clients or sets up a server under Apache HTTPD.
 
 
 Requirements
 ------------
-Requires Chef version 0.10.10+ and Ohai 0.6.12, due to use of `platform_family`.
-
-### Platforms
+#### Platforms
 - Debian/Ubuntu
-- RHEL/CentOS
+- RHEL/CentOS/Scientific/Amazon/Oracle
 - Fedora
 - Windows
 
+#### Chef
+- Chef 11+
 
-Cookbooks
----------
+#### Cookbooks
 - apache2
 - windows
 
@@ -53,13 +53,11 @@ On nodes where `subversion` should be installed such as application servers that
 
 License & Authors
 -----------------
-- Author:: Adam Jacob <adam@opscode.com>
-- Author:: Joshua Timberman <joshua@opscode.com>
-- Author:: Daniel DeLeo <dan@kallistec.com>
 
-```text
-Copyright:: 2008-2011, Opscode, Inc
+**Author:** Cookbook Engineering Team (<cookbooks@chef.io>)
 
+**Copyright:** 2008-2015, Chef Software, Inc.
+```
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -71,4 +69,4 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-````
+```

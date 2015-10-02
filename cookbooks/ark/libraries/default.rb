@@ -1,167 +1,111 @@
-# libs
+require_relative 'platform_specific_builders'
+require_relative 'resource_deprecations'
+require_relative 'resource_defaults'
+require_relative 'sevenzip_command_builder'
+require_relative 'unzip_command_builder'
+require_relative 'tar_command_builder'
+require_relative 'general_owner'
+require_relative 'windows_owner'
 
-module Opscode
-  module Ark
-    module ProviderHelpers
-      private
+module Ark
+  module ProviderHelpers
+    extend ::Ark::PlatformSpecificBuilders
 
-      def unpack_type
-        case parse_file_extension
-        when /tar.gz|tgz/  then "tar_xzf"
-        when /tar.bz2|tbz/ then "tar_xjf"
-        when /zip|war|jar/ then "unzip"
-        else raise "Don't know how to expand #{new_resource.url}"
-        end
-      end
+    generates_archive_commands_for :seven_zip,
+      when_the: -> { node['platform_family'] == 'windows' },
+      with_klass: ::Ark::SevenZipCommandBuilder
 
-      def parse_file_extension
-        if new_resource.extension.nil?
-          # purge any trailing redirect
-          url = new_resource.url.clone
-          url =~ /^https?:\/\/.*(.gz|bz2|bin|zip|jar|tgz|tbz)(\/.*\/)/
-          url.gsub!($2, '') unless $2.nil?
-          # remove tailing query string
-          release_basename = ::File.basename(url.gsub(/\?.*\z/, '')).gsub(/-bin\b/, '')
-          # (\?.*)? accounts for a trailing querystring
-          Chef::Log.debug("DEBUG: release_basename is #{release_basename}")
-          release_basename =~ %r{^(.+?)\.(tar\.gz|tar\.bz2|zip|war|jar|tgz|tbz)(\?.*)?}
-          Chef::Log.debug("DEBUG: file_extension is #{$2}")
-          new_resource.extension = $2
-        end
-        new_resource.extension
-      end
+    generates_archive_commands_for :unzip,
+      when_the: -> { new_resource.extension =~ /zip|war|jar/ },
+      with_klass: ::Ark::UnzipCommandBuilder
 
-      def unpack_command
-        case unpack_type
-        when "tar_xzf"
-          cmd = node['ark']['tar']
-          cmd = cmd + " xzf "
-          cmd = cmd + new_resource.release_file
-          cmd = cmd + tar_strip_args
-        when "tar_xjf"
-          cmd = node['ark']['tar']
-          cmd = cmd + " xjf "
-          cmd = cmd + " #{new_resource.release_file}"
-          cmd = cmd + tar_strip_args
-        when "unzip"
-          cmd = unzip_command
-        end
-        Chef::Log.debug("DEBUG: cmd: #{cmd}")
-        cmd
-      end
+    generates_archive_commands_for :tar,
+      when_the: -> { true },
+      with_klass: ::Ark::TarCommandBuilder
 
-      def unzip_command
-        if new_resource.strip_leading_dir
-          require 'tmpdir'
-          tmpdir = Dir.mktmpdir
-          cmd = "unzip -q -u -o #{new_resource.release_file} -d #{tmpdir}"
-          cmd = cmd + "&& rsync -a #{tmpdir}/*/ #{new_resource.path}"
-          cmd = cmd + "&& rm -rf  #{tmpdir}"
-        else
-          cmd = "unzip -q -u -o #{new_resource.release_file} -d #{new_resource.path}"
-        end
-      end
+    generates_owner_commands_for :windows,
+      when_the: -> { node['platform_family'] == 'windows' },
+      with_klass: ::Ark::WindowsOwner
 
-      def dump_command
-        case unpack_type
-        when "tar_xzf", "tar_xjf"
-          cmd = "tar -mxf \"#{new_resource.release_file}\" -C \"#{new_resource.path}\""
-        when "unzip"
-          cmd = "unzip  -j -q -u -o \"#{new_resource.release_file}\" -d \"#{new_resource.path}\""
-        end
-        Chef::Log.debug("DEBUG: cmd: #{cmd}")
-        cmd
-      end
+    generates_owner_commands_for :all_other_platforms,
+      when_the: -> { true },
+      with_klass: ::Ark::GeneralOwner
 
-      def cherry_pick_command
-        cmd = node['ark']['tar']
+    def deprecations
+      ::Ark::ResourceDeprecations.on(new_resource)
+    end
 
-        case unpack_type
-        when "tar_xzf"
-          cmd = cmd + " xzf "
-          cmd = cmd + " #{new_resource.release_file}"
-          cmd = cmd + " -C"
-          cmd = cmd + " #{new_resource.path}"
-          cmd = cmd + " #{new_resource.creates}"
-          cmd = cmd + tar_strip_args
-        when "tar_xjf"
-          cmd = cmd + "xjf #{new_resource.release_file}"
-          cmd = cmd + "-C #{new_resource.path} #{new_resource.creates}"
-          cmd = cmd + tar_strip_args
-        when "unzip"
-          cmd = "unzip -t #{new_resource.release_file} \"*/#{new_resource.creates}\" ; stat=$? ;"
-          cmd = cmd + "if [ $stat -eq 11 ] ; then "
-          cmd = cmd + "unzip  -j -o #{new_resource.release_file} \"#{new_resource.creates}\" -d #{new_resource.path} ;"
-          cmd = cmd + "elif [ $stat -ne 0 ] ; then false ;"
-          cmd = cmd + "else "
-          cmd = cmd + "unzip  -j -o #{new_resource.release_file} \"*/#{new_resource.creates}\" -d #{new_resource.path} ;"
-          cmd = cmd + "fi"
-        end
-        Chef::Log.debug("DEBUG: cmd: #{cmd}")
-        cmd
-      end
+    def show_deprecations
+      deprecations.each { |message| Chef::Log.warn("DEPRECATED: #{message}") }
+    end
 
-      def set_paths
-        release_ext = parse_file_extension
-        prefix_bin  = new_resource.prefix_bin.nil? ? new_resource.run_context.node['ark']['prefix_bin'] : new_resource.prefix_bin
-        prefix_root = new_resource.prefix_root.nil? ? new_resource.run_context.node['ark']['prefix_root'] : new_resource.prefix_root
-        if new_resource.prefix_home.nil?
-          default_home_dir = ::File.join(new_resource.run_context.node['ark']['prefix_home'], new_resource.name)
-        else
-          default_home_dir =  ::File.join(new_resource.prefix_home, new_resource.name)
-        end
-        # set effective paths
-        new_resource.prefix_bin = prefix_bin
-        new_resource.version ||= "1"  # initialize to one if nil
-        new_resource.path       = ::File.join(prefix_root, "#{new_resource.name}-#{new_resource.version}")
-        new_resource.home_dir ||= default_home_dir
-        Chef::Log.debug("path is #{new_resource.path}")
-        new_resource.release_file     = ::File.join(Chef::Config[:file_cache_path],  "#{new_resource.name}.#{release_ext}")
-      end
+    def defaults
+      @resource_defaults ||= ::Ark::ResourceDefaults.new(new_resource)
+    end
 
-      def set_put_paths
-        release_ext = parse_file_extension
-        path = new_resource.path.nil? ? new_resource.run_context.node['ark']['prefix_root'] : new_resource.path
-        new_resource.path      = ::File.join(path, new_resource.name)
-        Chef::Log.debug("DEBUG: path is #{new_resource.path}")
-        new_resource.release_file     = ::File.join(Chef::Config[:file_cache_path],  "#{new_resource.name}.#{release_ext}")
-      end
+    def set_paths
+      new_resource.extension = defaults.extension
+      new_resource.prefix_bin = defaults.prefix_bin
+      new_resource.prefix_root = defaults.prefix_root
+      new_resource.home_dir = defaults.home_dir
+      new_resource.version = defaults.version
 
-      def set_dump_paths
-        release_ext = parse_file_extension
-        new_resource.release_file  = ::File.join(Chef::Config[:file_cache_path],  "#{new_resource.name}.#{release_ext}")
-      end
+      # TODO: what happens when the path is already set --
+      #   with the current logic we overwrite it
+      #   if you are in windows we overwrite it
+      #   otherwise we overwrite it with the root/name-version
+      new_resource.path = defaults.path
+      new_resource.release_file = defaults.release_file
+    end
 
-      def set_apache_url(url_ref)
-        raise "Missing required resource attribute url" unless url_ref
-        url_ref.gsub!(/:name:/,          name.to_s)
-        url_ref.gsub!(/:version:/,       version.to_s)
-        url_ref.gsub!(/:apache_mirror:/, node['install_from']['apache_mirror'])
-        url_ref
-      end
+    def set_put_paths
+      new_resource.extension = defaults.extension
 
-      def tar_strip_args
-        new_resource.strip_leading_dir ? " --strip-components=1" : ""
-      end
+      # TODO: Should we be setting the prefix_root -
+      #   as the prefix_root could be used in the path_with_version
+      # new_resource.prefix_root = default.prefix_root
+      new_resource.path = defaults.path_without_version
+      new_resource.release_file = defaults.release_file_without_version
+    end
 
-      # def unpacked?(path)
-      #   if new_resource.creates
-      #     full_path = ::File.join(new_resource.path, new_resource.creates)
-      #   else
-      #     full_path = path
-      #   end
-      #   if ::File.directory? full_path
-      #     if ::File.stat(full_path).nlink == 2
-      #       false
-      #     else
-      #       true
-      #     end
-      #   elsif ::File.exists? full_path
-      #     true
-      #   else
-      #     false
-      #   end
-      # end
+    def set_dump_paths
+      new_resource.extension = defaults.extension
+      new_resource.release_file = defaults.release_file_without_version
+    end
+
+    def unpack_command
+      archive_application.unpack
+    end
+
+    def dump_command
+      archive_application.dump
+    end
+
+    def cherry_pick_command
+      archive_application.cherry_pick
+    end
+
+    def unzip_command
+      archive_application.unpack
+    end
+
+    def owner_command
+      owner_builder_klass.new(new_resource).command
+    end
+
+    private
+
+    def archive_application
+      @archive_application ||= archive_builder_klass.new(new_resource)
+    end
+
+    def archive_builder_klass
+      new_resource.extension ||= defaults.extension
+      Ark::ProviderHelpers.archive_command_generators.find { |condition, _klass| instance_exec(&condition) }.last
+    end
+
+    def owner_builder_klass
+      Ark::ProviderHelpers.owner_command_generators.find { |condition, _klass| instance_exec(&condition) }.last
     end
   end
 end

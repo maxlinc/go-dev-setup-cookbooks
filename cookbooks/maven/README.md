@@ -1,5 +1,9 @@
 maven Cookbook
 ==============
+
+[![Build Status](https://travis-ci.org/chef-cookbooks/maven.svg?branch=master)](http://travis-ci.org/chef-cookbooks/maven)
+[![Cookbook Version](https://img.shields.io/cookbook/v/maven.svg)](https://supermarket.chef.io/cookbooks/maven)
+
 Install and configure maven2 and maven3 from the binaries provided by the maven project.
 
 Provides the `maven` LWRP for pulling a maven artifact from a mave repository and placing it in an arbitrary location.
@@ -7,14 +11,16 @@ Provides the `maven` LWRP for pulling a maven artifact from a mave repository an
 
 Requirements
 ------------
-### Platforms
-- Debian
-- Ubuntu
-- CentOS
-- Red Hat
+#### Platforms
+- Debian/Ubuntu
+- RHEL/CentOS/Scientific/Amazon/Oracle
 - Fedora
+- Windows
 
-The following Opscode cookbooks are dependencies:
+#### Chef
+- Chef 11+
+
+#### Cookbooks
 - java - this cookbook not only depends on the java virtual machine but it also depends on the java_ark LWRP present in the java cookbooks
 - ark - used to unpack the maven tarball
 
@@ -30,6 +36,7 @@ Attributes
 * `node['maven']['repositories']` - an array of maven repositories to use; must be specified as an array. Used in the maven LWRP.
 * `node['maven']['setup_bin']` - Whether or not to put mvn on your system path, defaults to false
 * `node['maven']['mavenrc']['opts']` - Value of `MAVEN_OPTS` environment variable exported via `/etc/mavenrc` template, defaults to `-Dmaven.repo.local=$HOME/.m2/repository -Xmx384m -XX:MaxPermSize=192m`
+* `node['maven']['install_java']` - Whether or not to use the Java community cookbook to install Java. Defaults to `true`.
 
 
 Recipes
@@ -96,12 +103,12 @@ end
 
 License & Authors
 -----------------
-- Author:: Seth Chisamore (<schisamo@opscode.com>)
+- Author:: Seth Chisamore (<schisamo@chef.io>)
 - Author:: Bryan W. Berry (<bryan.berry@gmail.com>)
 - Author:: Leif Madsen (<lmadsen@thinkingphones.com>)
 
 ```text
-Copyright 2010-2013, Opscode, Inc.
+Copyright 2010-2015, Chef Software, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

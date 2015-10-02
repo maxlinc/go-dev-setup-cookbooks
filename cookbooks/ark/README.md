@@ -1,4 +1,4 @@
-# <a name="title"></a> chef-ark [![Build Status](https://secure.travis-ci.org/opscode-cookbooks/ark.png?branch=master)](https://travis-ci.org/opscode-cookbooks/ark)
+# <a name="title"></a> chef-ark [![Build Status](https://secure.travis-ci.org/burtlo/ark.png?branch=master)](https://travis-ci.org/burtlo/ark)
 
 Overview
 ========
@@ -30,8 +30,9 @@ By default, the ark will not run again if the `:path` is not empty.
 Ark provides many actions to accommodate different use cases, such as
 `:dump`, `:cherry_pick`, `:put`, and `:install_with_make`.
 
-At this time ark only handles files available from URLs. It does not
-handle local files.
+At this time ark only handles files available from URLs using the
+[remote_file](http://docs.chef.io/resource_remote_file.html) provider.
+It does handle local files using the `file://` protocol.
 
 Requirements
 ============
@@ -40,7 +41,7 @@ This cookbook requires Chef 11 for the provider, as it uses the
 `use_inline_resources` method.
 
 More about
-[use_inline_resources](http://docs.opscode.com/lwrp_common_inline_compile.html)
+[use_inline_resources](http://docs.chef.io/lwrp_common_inline_compile.html)
 in the Chef documentation.
 
 Should work on common Unix/Linux systems with typical userland
@@ -62,6 +63,10 @@ defaults.
   `prefix_bin` is not passed into the resource.
 * `node['ark']['prefix_home']` - default home location if the
   `prefix_home` is not passed into the resource.
+* `node['ark']['win_install_dir']` - directory where the files will
+  be put on windows
+* `node['ark']['package_dependencies']` - prerequisite system
+  packages that need to be installed to support ark.
 
 Resources/Providers
 ===================
@@ -84,6 +89,7 @@ Actions
 - `:put`: extract the archive to a specified path, does not create any
   symbolic links
 - `:remove`: removes the extracted directory and related symlink #TODO
+- `:setup_py`: runs the command "python setup.py" in the extracted directory
 - `:setup_py_build`: runs the command "python setup.py build" in the
   extracted directory
 - `:setup_py_install`: runs the comand "python setup.py install" in
@@ -125,9 +131,6 @@ links.
 
 - `path`: path to extract to.
   - Default: `/usr/local`
-- `has_binaries`: array of binary commands to symlink into
-  `/usr/local/bin/`, you must specify the relative path.
-  - Example: `[ 'bin/java', 'bin/javaws' ]`
 - `append_env_path`: boolean, if true, append the `./bin` directory of
   the extracted directory to the global `PATH` variable for all users.
 
@@ -140,7 +143,6 @@ Attribute Parameters
   `:name:version:apache_mirror:` that will auto-magically construct
   download url from the apache mirrors site.
 - `version`: software version, defaults to `1`.
-- `checksum`: sha256 checksum, used for security .
 - `mode`: file mode for `app_home`, is an integer.
 - `prefix_root`: default `prefix_root`, for use with `:install*`
   actions.
@@ -170,9 +172,9 @@ Attribute Parameters
   - Example: `mvn`, `java`, `javac`, etc.
 - `environment`: hash of environment variables to pass to invoked
   shell commands like `tar`, `unzip`, `configure`, and `make`.
-- `strip_leading_dir`: by default, ark strips the leading directory
-  from an archive, which is the default for both `unzip` and `tar`
-  commands
+- `strip_components`: number of components in path to strip when extracting archive.
+  With default value of `1`, ark strips the leading directory from an archive,
+  which is the default for both `unzip` and `tar` commands.
 - `autoconf_opts`: an array of command line options for use with the
   GNU `autoconf` script.
   - Example: `[ '--include=/opt/local/include', '--force' ]`
@@ -227,7 +229,7 @@ Install Apache Ivy dependency resolution tool in /home/foobar/ivy, strip any
 leading directory if one exists:
 
      ark "ivy" do
-       path "/home/foobar
+       path "/home/foobar"
        url 'http://someurl.example.com/ivy.tar.gz'
        checksum '89ba5fde0c596db388c3bbd265b63007a9cc3df3a8e6d79a46780c1a39408cb5'
        action :put
@@ -282,11 +284,13 @@ License and Author
 - Author: Philip (flip) Kromer - Infochimps, Inc(<coders@infochimps.com>)
 - Author: Bryan W. Berry (<bryan.berry@gmail.com>)
 - Author: Denis Barishev (<denis.barishev@gmail.com>)
-- Author: Sean OMeara (<someara@opscode.com>)
+- Author: Sean OMeara (<someara@chef.io>)
+- Author: John Bellone (<jbellone@bloomberg.net>)
 - Copyright: 2011, Philip (flip) Kromer - Infochimps, Inc
 - Copyright: 2012, Bryan W. Berry
 - Copyright: 2012, Denis Barishev
-- Copyright: 2013, Opscode, Inc
+- Copyright: 2013, Chef Software, Inc
+- Copyright: 2014, Bloomberg L.P.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

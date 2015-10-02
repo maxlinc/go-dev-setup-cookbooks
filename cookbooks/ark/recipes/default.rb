@@ -18,11 +18,8 @@
 # limitations under the License.
 #
 
-package 'unzip'
-package 'libtool'
-package 'rsync'
-package 'autoconf'
-package 'make'
-package 'gcc'
-package 'autogen' unless platform_family?('rhel', 'fedora')
-package 'gtar' if platform?('freebsd')
+Array(node['ark']['package_dependencies']).each do |pkg|
+  package pkg
+end
+
+include_recipe "7-zip" if node['platform_family'] == 'windows'
